@@ -1,7 +1,9 @@
 library(shiny)
 library(leaflet)
+library(mapview)
+library(ggplot2)
 
-fluidPage(title="Raw power by plant (US)",
+fluidPage(title="Chicago power usage",
           
           navbarPage(
             
@@ -9,36 +11,36 @@ fluidPage(title="Raw power by plant (US)",
             id = "nav",
             position = "static-top",
             collapsible = TRUE,
-            selected = "About",
+            selected = "Near West Side",
             tabPanel(
               title = "About",
-              tags$h1("Welcome to Project 2 of CS 424!", `style` = "text-align:center"),
+              tags$h1("Welcome to Project 3 of CS 424!", `style` = "text-align:center"),
               tags$h4("Created by: Parasdeep (Spring 2021)", `style` = "text-align:right"),
               tags$u(tags$h3("Purpose:", `style` = "font-weight:bold")),
-              tags$ul(tags$li("Visualize the energy produced by plants across the state of Illinois (Illinois 2018)", `style` = "font-size:20px"),
-                      tags$li("Compare the energy produced by plants between any two states (Compare states)",`style` = "font-size:20px"),
-                      tags$li("Geographically visualize variance in energy production across the entire country (Compare states)", `style` = "font-size:20px")),
+              tags$ul(tags$li("Visualize the energy and gas used by various types of buildings in the Near West Side community area of Chicago", `style` = "font-size:20px"),
+                      tags$li("Compare the energy and gas used between two community areas within the city of Chicago (Compare areas)",`style` = "font-size:20px"),
+                      tags$li("Geographically visualize variance in power usage across the entire city (Compare areas)", `style` = "font-size:20px")),
               tags$u(tags$h3("The Data:", `style` = "font-weight:bold")),
-              tags$ul(tags$li("Three excel files detailing the energy produced by plants across the U.S.A in the years 2000, 2010 and 2018", `style` = "font-size:20px"),
-                      tags$li("Each file provides the plant name, location (LAT and LON), and energy produced divided by energy source",`style` = "font-size:20px"),
-                      tags$li("Please find the link to the data sources here:", tags$a(`href` = "https://www.epa.gov/egrid/download-data", "Source"), `style` = "font-size:20px")),
+              tags$ul(tags$li("An excel file detailing the power usage by community area in the city of Chicago for the year of 2010", `style` = "font-size:20px"),
+                      tags$li("The file provides totals for both gas and energy, as well as providing monthly values for both attributes.",`style` = "font-size:20px"),
+                      tags$li("Please find the link to the data sources here:", tags$a(`href` = "https://www.kaggle.com/chicago/chicago-energy-usage-2010", "Source"), `style` = "font-size:20px")),
               tags$u(tags$h3("Notes and tips:", `style` = "font-weight:bold")),
               tags$ul(tags$li("Please use the navbar above to navigate the app", `style` = "font-size:20px"),
-                      tags$li("Please be patient! The intial load time will take several seconds, but the app will run smoothly afterwards", `style` = "font-size:20px"),
                       tags$li("The source US-Total will transform the map into the entire country. It is at the bottom of both state inputs in Compare States", `style` = "font-size:20px"),
                       tags$li("The minimum and maximum sliders affect both zones in compare states", `style` = "font-size:20px"),
                       tags$li("The application will either show a blank slate, or an error, in case your filters do not match any data points", `style` = "font-size:20px"))
               
             ),
-            tabPanel("Illinois 2018",
+            tabPanel("Near West Side",
                      sidebarLayout(
                        sidebarPanel(
                          width = 2,
-                         tags$head(tags$style("#mapIL{height:90vh !important;}")),
-                         checkboxGroupInput(
-                           inputId = "SourcesIL", 
-                           label = "Pick the sources", 
-                           choices = c("Biomass", "Coal", "Gas", "Hydro", "Nuclear", "Oil", "Other", "Solar", "Wind", "Geothermal")
+                         tags$head(tags$style("#NWS{height:90vh !important;}")),
+                         selectInput(
+                           inputId = "SourcesNWS",
+                           label = "Pick a view",
+                           choices = c("Electricity", "Gas", "Building Age", "Building Type", "Building Height", "Total population"),
+                           selected = "Electricity"
                          ),
                          checkboxInput(inputId = 'allIL', label = 'All', value = TRUE),
                          actionButton(inputId = 'renewableIL', label = 'Renewable'),
@@ -48,8 +50,8 @@ fluidPage(title="Raw power by plant (US)",
                        ),
                        mainPanel(
                          width = 10,
-                         title = "Illinois 2018",
-                         leafletOutput("mapIL")
+                         title = "Near West Side",
+                         mapviewOutput('NWS')
                        )
                      )
             ),
