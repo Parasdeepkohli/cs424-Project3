@@ -25,7 +25,8 @@ function(input, output, session){
     
     
     legend_Name <- input$SourcesNWS
-    input_type <- ifelse(input$TypeNWS == 'All', c("Commercial", "Industrial", "Residential"), c(input$TypeNWS))
+    if (input$TypeNWS == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
+    else{input_type <- input$TypeNWS}
     
     if (input$SourcesNWS == 'Electricity' | input$SourcesNWS == 'Gas'){
     
@@ -58,43 +59,73 @@ function(input, output, session){
   
   output$NWSElec <- renderPlot({
     
-    input_type <- ifelse(input$TypeNWS == 'All', c("Commercial", "Industrial", "Residential"), c(input$TypeNWS))
+    if (input$TypeNWS == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
+    else{input_type <- input$TypeNWS}
+    
     final_data <- subset(final_data, BUILDING.TYPE %in% input_type)
     final_data <- final_data[c( "KWH.JANUARY.2010", "KWH.FEBRUARY.2010", "KWH.MARCH.2010", "KWH.APRIL.2010",
                               "KWH.MAY.2010", "KWH.JUNE.2010", "KWH.JULY.2010", "KWH.AUGUST.2010", "KWH.SEPTEMBER.2010", "KWH.OCTOBER.2010",
-                              "KWH.NOVEMBER.2010", "KWH.DECEMBER.2010", "KWH.TOTAL.2010")]
+                              "KWH.NOVEMBER.2010", "KWH.DECEMBER.2010")]
     
     final_data <- st_drop_geometry(final_data)
-    colnames(final_data) <- c(month.name, "Total")
+    colnames(final_data) <- c(month.abb)
     final_data <- data.frame(Month = names(final_data),Value=colSums(final_data))
     
-    final_data$Month <- factor(final_data$Month, levels = month.name)
+    final_data$Month <- factor(final_data$Month, levels = c(month.abb, "Total"))
     
     ggplot(final_data, aes(x = Month, y = Value)) + geom_bar(stat = "identity") +
-      scale_y_continuous(name = "Electricity used (KWh)", labels = addUnits)
+      scale_y_continuous(name = "Electricity used (KWh)", labels = addUnits) +
+      ggtitle(paste0("Electricity usage in ", input$TypeNWS, " by month")) +
+      theme(plot.title = element_text(hjust = 0.5),
+            text = element_text(size = 14))
     
     
   })
   
   output$NWSGas <- renderPlot({
     
-    input_type <- ifelse(input$TypeNWS == 'All', c("Commercial", "Industrial", "Residential"), c(input$TypeNWS))
+    if (input$TypeNWS == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
+    else{input_type <- input$TypeNWS}
     final_data <- subset(final_data, BUILDING.TYPE %in% input_type)
     final_data <- final_data[c( "THERM.JANUARY.2010", "THERM.FEBRUARY.2010", "THERM.MARCH.2010", "THERM.APRIL.2010",
                                 "THERM.MAY.2010", "THERM.JUNE.2010", "THERM.JULY.2010", "THERM.AUGUST.2010", "THERM.SEPTEMBER.2010", "THERM.OCTOBER.2010",
-                                "THERM.NOVEMBER.2010", "THERM.DECEMBER.2010", "THERM.TOTAL.2010")]
+                                "THERM.NOVEMBER.2010", "THERM.DECEMBER.2010")]
     
     final_data <- st_drop_geometry(final_data)
-    colnames(final_data) <- c(month.name, "Total")
+    colnames(final_data) <- c(month.abb)
     final_data <- data.frame(Month = names(final_data),Value=colSums(final_data))
     
-    final_data$Month <- factor(final_data$Month, levels = month.name)
+    final_data$Month <- factor(final_data$Month, levels = c(month.abb, "Total"))
     
     ggplot(final_data, aes(x = Month, y = Value)) + geom_bar(stat = "identity") +
-      scale_y_continuous(name = "Gas used (KWh)", labels = addUnits)
+      scale_y_continuous(name = "Gas used (KWh)", labels = addUnits) +
+      ggtitle(paste0("Gas usage in ", input$TypeNWS, " by month")) +
+      theme(plot.title = element_text(hjust = 0.5),
+            text = element_text(size = 14))
     
     
   })
+  
+  output$NWSTable <- DT::renderDataTable(
+    class = 'cell-border stripe',
+    filter = 'top',
+    options = list(columnDefs = list(list(className = 'dt-right'))),
+    {
+      
+      if (input$TypeNWS == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
+      else{input_type <- input$TypeNWS}
+      
+      final_data <- subset(final_data, BUILDING.TYPE %in% input_type)
+      final_data <- final_data[c( "BUILDING.TYPE", "KWH.JANUARY.2010", "KWH.FEBRUARY.2010", "KWH.MARCH.2010", "KWH.APRIL.2010",
+                                  "KWH.MAY.2010", "KWH.JUNE.2010", "KWH.JULY.2010", "KWH.AUGUST.2010", "KWH.SEPTEMBER.2010", "KWH.OCTOBER.2010",
+                                  "KWH.NOVEMBER.2010", "KWH.DECEMBER.2010", "THERM.JANUARY.2010", "THERM.FEBRUARY.2010", "THERM.MARCH.2010", "THERM.APRIL.2010",
+                                  "THERM.MAY.2010", "THERM.JUNE.2010", "THERM.JULY.2010", "THERM.AUGUST.2010", "THERM.SEPTEMBER.2010", "THERM.OCTOBER.2010",
+                                  "THERM.NOVEMBER.2010", "THERM.DECEMBER.2010")]
+      
+      final_data <- st_drop_geometry(final_data)
+      final_data <- aggregate(.~BUILDING.TYPE, data = final_data, FUN = sum)
+    })
+  
   
   observe({
     input$reset_button

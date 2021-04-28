@@ -2,6 +2,7 @@ library(shiny)
 library(leaflet)
 library(mapview)
 library(ggplot2)
+library(DT)
 
 fluidPage(title="Chicago power usage",
           
@@ -35,7 +36,7 @@ fluidPage(title="Chicago power usage",
                      sidebarLayout(
                        sidebarPanel(
                          width = 2,
-                         tags$head(tags$style("#NWS{height:50vh !important;}")),
+                         tags$head(tags$style("#NWS{height:40vh !important;}")),
                          selectInput(
                            inputId = "SourcesNWS",
                            label = "Pick a view",
@@ -64,9 +65,10 @@ fluidPage(title="Chicago power usage",
                          title = "Near West Side",
                          leafletOutput('NWS'),
                          splitLayout(
-                           cellWidths = c("40%", "40%", "20%"),
-                           plotOutput('NWSElec'),
-                           plotOutput('NWSGas')
+                           cellWidths = c("33%", "33%", "33%"),
+                           plotOutput('NWSElec', height = "500px"),
+                           plotOutput('NWSGas', height = "500px"),
+                           dataTableOutput("NWSTable")
                          )
                        )
                      )
