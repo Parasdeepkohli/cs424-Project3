@@ -35,23 +35,39 @@ fluidPage(title="Chicago power usage",
                      sidebarLayout(
                        sidebarPanel(
                          width = 2,
-                         tags$head(tags$style("#NWS{height:90vh !important;}")),
+                         tags$head(tags$style("#NWS{height:50vh !important;}")),
                          selectInput(
                            inputId = "SourcesNWS",
                            label = "Pick a view",
-                           choices = c("Electricity", "Gas", "Building Age", "Building Type", "Building Height", "Total population"),
+                           choices = c("Electricity", "Gas", "Avg Building Age", "Avg Building Height", "Total population"),
                            selected = "Electricity"
                          ),
-                         checkboxInput(inputId = 'allIL', label = 'All', value = TRUE),
-                         actionButton(inputId = 'renewableIL', label = 'Renewable'),
-                         actionButton(inputId = 'nonrenewIL', label = 'Non-Renew'),
-                         br(),
+                         selectInput(
+                           inputId = "TypeNWS",
+                           label = "Pick a building type",
+                           choices = c("All", "Commercial", "Industrial", "Residential"),
+                           selected = "All"
+                         ),
+                         conditionalPanel(condition = "input.SourcesNWS == 'Electricity' || input.SourcesNWS == 'Gas'",
+                           selectInput(
+                             inputId = 'MonthNWS', 
+                             label = 'Select a month',
+                             choices = c("Total", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+                                         "November", "December"),
+                             selected = "Total"
+                           )
+                         ),
                          actionButton("reset_button", "Reset view")
                        ),
                        mainPanel(
                          width = 10,
                          title = "Near West Side",
-                         mapviewOutput('NWS')
+                         leafletOutput('NWS'),
+                         splitLayout(
+                           cellWidths = c("40%", "40%", "20%"),
+                           plotOutput('NWSElec'),
+                           plotOutput('NWSGas')
+                         )
                        )
                      )
             ),
