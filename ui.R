@@ -4,6 +4,8 @@ library(mapview)
 library(ggplot2)
 library(DT)
 
+communities <- sort(readLines("Communities.txt"))
+
 fluidPage(title="Chicago power usage",
           
           navbarPage(
@@ -12,7 +14,7 @@ fluidPage(title="Chicago power usage",
             id = "nav",
             position = "static-top",
             collapsible = TRUE,
-            selected = "Near West Side",
+            selected = "Compare Communities",
             tabPanel(
               title = "About",
               tags$h1("Welcome to Project 3 of CS 424!", `style` = "text-align:center"),
@@ -27,9 +29,11 @@ fluidPage(title="Chicago power usage",
                       tags$li("Please find the link to the data sources here:", tags$a(`href` = "https://www.kaggle.com/chicago/chicago-energy-usage-2010", "Source"), `style` = "font-size:20px")),
               tags$u(tags$h3("Notes and tips:", `style` = "font-weight:bold")),
               tags$ul(tags$li("Please use the navbar above to navigate the app", `style` = "font-size:20px"),
-                      tags$li("The source US-Total will transform the map into the entire country. It is at the bottom of both state inputs in Compare States", `style` = "font-size:20px"),
-                      tags$li("The minimum and maximum sliders affect both zones in compare states", `style` = "font-size:20px"),
-                      tags$li("The application will either show a blank slate, or an error, in case your filters do not match any data points", `style` = "font-size:20px"))
+                      tags$li("Select the source Total in the Month drop-down inputs to see the data for all months. It is selected by default in each visualization.", `style` = "font-size:20px"),
+                      tags$li("The application will either show a blank slate, or an error, in case your filters do not match any data points", `style` = "font-size:20px")),
+              tags$u(tags$h3("Known Issues", `style` = "font-weight:bold")),
+              tags$ul(tags$li("The top map in Compare Communities incorrectly shows Loop as well by default. Switching between communities via the dropdown fixes this issue.", `style` = "font-size:20px"),
+                      tags$li("Sometimes, the maps will fail to load and display a gray screen. Changing the selected community from the dropdown fixes this.", `style` = "font-size:20px"))
               
             ),
             tabPanel("Near West Side",
@@ -73,55 +77,83 @@ fluidPage(title="Chicago power usage",
                        )
                      )
             ),
-            tabPanel("Compare states",
+            tabPanel("Compare Communities",
                      fluidRow(
-                       column(width = 3,
+                       column(width = 2,
                               sidebarLayout(
                                 sidebarPanel(width = 12,
-                                             fluidRow(
-                                               column(6,
-                                                      checkboxGroupInput(
-                                                        inputId = "Sources1", 
-                                                        label = "Top map", 
-                                                        choices = c("Biomass", "Coal", "Gas", "Hydro", "Nuclear", "Oil", "Other", "Solar", "Wind", "Geothermal")
-                                                      ),
-                                                      checkboxInput(inputId = 'all1', label = 'All', value = TRUE),
-                                                      actionButton(inputId = 'renewable1', label = 'Renewable'),
-                                                      actionButton(inputId = 'nonrenew1', label = 'Non-Renew'), 
-                                                      checkboxInput(inputId = "merge", label = "Link options", value = FALSE)
-                                               ),
-                                               column(6,
-                                                      conditionalPanel(condition = "input.merge == false",
-                                                                       checkboxGroupInput(
-                                                                         inputId = "Sources2", 
-                                                                         label = "Bottom map", 
-                                                                         choices = c("Biomass", "Coal", "Gas", "Hydro", "Nuclear", "Oil", "Other", "Solar", "Wind", "Geothermal")
-                                                                       ),
-                                                                       checkboxInput(inputId = 'all2', label = 'All', value = TRUE),
-                                                                       actionButton(inputId = 'renewable2', label = 'Renewable'),
-                                                                       actionButton(inputId = 'nonrenew2', label = 'Non-Renew'),
-                                                      )
-                                               )
-                                             ),
-                                             sliderInput(
-                                               inputId <- "MinSlider",
-                                               label <- "Minimum Energy Generation",
-                                               min = 0,
-                                               max = 32000000,
-                                               value = 0
-                                             ),
-                                             sliderInput(
-                                               inputId <- "MaxSlider",
-                                               label <- "Maximum Energy Generation",
-                                               min = 0,
-                                               max = 32000000,
-                                               value = 32000000
-                                             )
-                                ),
+                                            selectInput(
+                                              inputId = "Communities1",
+                                              label = "Top Community",
+                                              choices = communities,
+                                              selected = "Near West Side"
+                                            ),
+                                            
+                                            selectInput(
+                                              inputId = "Sources1",
+                                              label = "Top view",
+                                              choices = c("Electricity", "Gas", "Avg Building Age", "Avg Building Height", "Total population"),
+                                              selected = "Electricity"
+                                            ),
+                                            
+                                            selectInput(
+                                              inputId = "Type1",
+                                              label = "Top building type",
+                                              choices = c("All", "Commercial", "Industrial", "Residential"),
+                                              selected = "All"
+                                            ),
+                                            
+                                            conditionalPanel(condition = "input.SourcesNWS == 'Electricity' || input.SourcesNWS == 'Gas'",
+                                                             selectInput(
+                                                               inputId = 'Month1', 
+                                                               label = 'Top month',
+                                                               choices = c("Total", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+                                                                           "November", "December"),
+                                                               selected = "Total"
+                                                             )
+                                            ),
+                                            
+                                            selectInput(
+                                              inputId = "Communities2",
+                                              label = "Bottom Community",
+                                              choices = communities,
+                                              selected = "Loop"
+                                            ),
+                                            
+                                            selectInput(
+                                              inputId = "Sources2",
+                                              label = "Bottom view",
+                                              choices = c("Electricity", "Gas", "Avg Building Age", "Avg Building Height", "Total population"),
+                                              selected = "Electricity"
+                                            ),
+                                            selectInput(
+                                              inputId = "Type2",
+                                              label = "Bottom building type",
+                                              choices = c("All", "Commercial", "Industrial", "Residential"),
+                                              selected = "All"
+                                            ),
+                                            conditionalPanel(condition = "input.SourcesNWS == 'Electricity' || input.SourcesNWS == 'Gas'",
+                                                             selectInput(
+                                                               inputId = 'Month2', 
+                                                               label = 'Bottom month',
+                                                               choices = c("Total", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+                                                                           "November", "December"),
+                                                               selected = "Total"
+                                                             )
+                                            ),
+                                            selectInput(
+                                              inputId = "Colors",
+                                              label = "Pick a color scheme",
+                                              choices = c("Viridis", "Heat", "SunsetDark"),
+                                              selected = "Viridis"
+                                            ),
+                                            actionButton("reset_button1", "Reset top view"),
+                                            actionButton("reset_button2", "Reset bot view"),
+                                          ),
                                 mainPanel()
                               )
                        ),
-                       column(width = 7,
+                       column(width = 6,
                               tags$head(tags$style("#map1{height:43vh !important;}
                                             #map2{height:43vh !important;")),
                               leafletOutput("map1"),
@@ -129,36 +161,14 @@ fluidPage(title="Chicago power usage",
                               leafletOutput("map2")
                               
                        ),
-                       column(width = 2,
+                       column(width = 4,
                               sidebarLayout(
-                                sidebarPanel(width = 12,
-                                             selectInput(inputId = "Year1",
-                                                         label = "Top map year",
-                                                         choices = c(2000, 2010, 2018),
-                                                         selected = 2000),
-                                             selectInput(inputId = "State1",
-                                                         label = "Top map state",
-                                                         choices = c(state.name, "US-Total"),
-                                                         selected = "Illinois"),
-                                             selectInput(inputId = "style1",
-                                                         label = "Top map style",
-                                                         choices = c("Hard boundries (B&W)", "Muted boundries", "Nat geo (Detailed)"),
-                                                         selected = "Muted boundries"),
-                                             selectInput(inputId = "Year2",
-                                                         label = "Bottom map year",
-                                                         choices = c(2000, 2010, 2018),
-                                                         selected = 2018),
-                                             selectInput(inputId = "State2",
-                                                         label = "Bottom map state",
-                                                         choices = c(state.name, "US-Total"),
-                                                         selected = "Illinois"),
-                                             selectInput(inputId = "style2",
-                                                         label = "Bottom map style",
-                                                         choices = c("Hard boundries (B&W)", "Muted boundries", "Nat geo (Detailed)"),
-                                                         selected = "Muted boundries"),
-                                             
-                                             actionButton("reset_button1", "Reset top view"),
-                                             actionButton("reset_button2", "Reset bot view")
+                                sidebarPanel(width = 0,
+                                             plotOutput('Elec1', height = "210px"),
+                                             plotOutput('Gas1', height = "210px"),
+                                             plotOutput('Elec2', height = "210px"),
+                                             plotOutput('Gas2', height = "210px"),
+        
                                 ),
                                 mainPanel()
                               )
