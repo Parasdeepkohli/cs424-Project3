@@ -14,7 +14,7 @@ fluidPage(title="Chicago power usage",
             id = "nav",
             position = "static-top",
             collapsible = TRUE,
-            selected = "Compare Communities",
+            selected = "About",
             tabPanel(
               title = "About",
               tags$h1("Welcome to Project 3 of CS 424!", `style` = "text-align:center"),
@@ -26,14 +26,16 @@ fluidPage(title="Chicago power usage",
               tags$u(tags$h3("The Data:", `style` = "font-weight:bold")),
               tags$ul(tags$li("An excel file detailing the power usage by community area in the city of Chicago for the year of 2010", `style` = "font-size:20px"),
                       tags$li("The file provides totals for both gas and energy, as well as providing monthly values for both attributes.",`style` = "font-size:20px"),
-                      tags$li("Please find the link to the data sources here:", tags$a(`href` = "https://www.kaggle.com/chicago/chicago-energy-usage-2010", "Source"), `style` = "font-size:20px")),
+                      tags$li("Please find the link to the data source here:", tags$a(`href` = "https://www.kaggle.com/chicago/chicago-energy-usage-2010", "Source"), `style` = "font-size:20px")),
               tags$u(tags$h3("Notes and tips:", `style` = "font-weight:bold")),
               tags$ul(tags$li("Please use the navbar above to navigate the app", `style` = "font-size:20px"),
+                      tags$li("The application will either show a blank slate, or an error, in case your filters do not match any data points", `style` = "font-size:20px"),
                       tags$li("Select the source Total in the Month drop-down inputs to see the data for all months. It is selected by default in each visualization.", `style` = "font-size:20px"),
-                      tags$li("The application will either show a blank slate, or an error, in case your filters do not match any data points", `style` = "font-size:20px")),
+                      tags$li("The application takes some time to start up as the data files to be downloaded are large.", `style` = "font-size:20px"),
+                      tags$li("Select the Community 'All of Chicago' to see the data for the entire city. Note that this may take up to a minute to load due to the data size", `style` = "font-size:20px"),
+                      tags$li("Switching from block level to tract level takes several seconds, so please be patient!", `style` = "font-size:20px")),
               tags$u(tags$h3("Known Issues", `style` = "font-weight:bold")),
-              tags$ul(tags$li("The top map in Compare Communities incorrectly shows Loop as well by default. Switching between communities via the dropdown fixes this issue.", `style` = "font-size:20px"),
-                      tags$li("Sometimes, the maps will fail to load and display a gray screen. Changing the selected community from the dropdown fixes this.", `style` = "font-size:20px"))
+              tags$ul(tags$li("Sometimes, the maps will fail to load and display a gray screen. Changing the selected community from the dropdown fixes this.", `style` = "font-size:20px"))
               
             ),
             tabPanel("Near West Side",
@@ -82,10 +84,16 @@ fluidPage(title="Chicago power usage",
                        column(width = 2,
                               sidebarLayout(
                                 sidebarPanel(width = 12,
+                                            radioButtons(
+                                               inputId = 'BorT',
+                                               label = "Pick the view",
+                                               choices = c('Blocks', 'Tracts'),
+                                               selected = 'Blocks'
+                                             ),
                                             selectInput(
                                               inputId = "Communities1",
                                               label = "Top Community",
-                                              choices = communities,
+                                              choices = c('All of Chicago', communities),
                                               selected = "Near West Side"
                                             ),
                                             
@@ -116,7 +124,7 @@ fluidPage(title="Chicago power usage",
                                             selectInput(
                                               inputId = "Communities2",
                                               label = "Bottom Community",
-                                              choices = communities,
+                                              choices = c('All of Chicago', communities),
                                               selected = "Loop"
                                             ),
                                             
@@ -147,6 +155,7 @@ fluidPage(title="Chicago power usage",
                                               choices = c("Viridis", "Heat", "SunsetDark"),
                                               selected = "Viridis"
                                             ),
+                                            
                                             actionButton("reset_button1", "Reset top view"),
                                             actionButton("reset_button2", "Reset bot view"),
                                           ),

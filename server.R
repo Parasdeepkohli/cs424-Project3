@@ -1,6 +1,6 @@
 library(shiny)
 library(stringr)
-library(stringr)
+library(sf)
 library(leaflet)
 library(mapview)
 library(tigris)
@@ -13,12 +13,20 @@ function(input, output, session){
   
   cook <- blocks('IL', county = 'Cook', year = 2010) # Loads the data frame containing cook county block codes, lat/lon and geometry
   input_data <- read.csv("Energy_Usage_2010(m).csv") # Loads in the census block data for Chicago
+  input_tracts <- input_data
   input_data_NWS <- subset(input_data, COMMUNITY.AREA.NAME == "Near West Side")
   final_data_NWS <- merge(cook, input_data_NWS, by = 'GEOID10')
   
   NWS_Lat <- mean(as.numeric(final_data_NWS$INTPTLAT10))
   NWS_Lon <- mean(as.numeric(final_data_NWS$INTPTLON10))
   
+  cook_tracts <- tracts('IL', county = 'Cook', year = 2010)
+  colnames(input_tracts)[2] <- 'TRACTCE10'
+  input_tracts$TRACTCE10 <- as.character(input_tracts$TRACTCE10)
+  
+  for (row in 1:nrow(input_tracts)){
+    input_tracts[row, "TRACTCE10"] <- substr(input_tracts[row, "TRACTCE10"], 6, 11)
+  }
   
   output$NWS <- renderLeaflet({ 
     
@@ -127,12 +135,29 @@ function(input, output, session){
     })
   
   
-  output$map1 <- renderLeaflet({ 
+  output$map1 <- renderLeaflet({
     
-    input_data_1 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities1)
-    final_data_1 <- merge(cook, input_data_1, by = 'GEOID10')
+    if (input$BorT == 'Tracts'){ 
+      
+      input_data_1 <- input_tracts 
+      cook_1 <- cook_tracts
+      col <- 'TRACTCE10'
+      
+    }
+    
+    else{
+      
+      input_data_1 <- input_data
+      cook_1 <- cook
+      col <- 'GEOID10'
+      
+      }
+    
+    if (input$Communities1 != 'All of Chicago'){input_data_1 <- subset(input_data_1, COMMUNITY.AREA.NAME == input$Communities1)}
+    
+    final_data_1 <- merge(cook_1, input_data_1, by = col)
         
-    legend_Name <- input$Sources1
+    legend_Name <- paste0("1. ", input$Sources1)
     if (input$Type1 == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
     else{input_type <- input$Type1}
     
@@ -141,9 +166,9 @@ function(input, output, session){
       input_variable <- ifelse(input$Sources1 == 'Electricity', paste0("KWH.", toupper(input$Month1), ".2010"),
                                paste0("THERM.", toupper(input$Month1), ".2010"))
       
-      final_data_1 <- final_data_1[c("GEOID10", "BUILDING.TYPE", input_variable, "geometry", "INTPTLAT10", "INTPTLON10")]
+      final_data_1 <- final_data_1[c(col, "BUILDING.TYPE", input_variable, "geometry", "INTPTLAT10", "INTPTLON10")]
       final_data_1 <- subset(final_data_1, BUILDING.TYPE %in% input_type)
-      final_data_1 <- aggregate(final_data_1[input_variable], by = final_data_1['GEOID10'], FUN = sum)
+      final_data_1 <- aggregate(final_data_1[input_variable], by = final_data_1[col], FUN = sum)
       
       
       legend_Name <- paste0(legend_Name, ' in KWH')
@@ -153,22 +178,41 @@ function(input, output, session){
     else{
       
       input_variable <- str_replace_all(toupper(input$Sources1), ' ', '.')
-      final_data_1 <- final_data_1[c("GEOID10", "BUILDING.TYPE", input_variable, "geometry", "INTPTLAT10","INTPTLON10")]
+      final_data_1 <- final_data_1[c(col, "BUILDING.TYPE", input_variable, "geometry", "INTPTLAT10","INTPTLON10")]
       final_data_1 <- subset(final_data_1, BUILDING.TYPE %in% input_type)
       
     }
     
-    mapview(final_data_1, zcol = input_variable, layer.name = legend_Name, col.regions=hcl.colors(palette = input$Colors, n = 4))@map
+    p = input$Colors
+    
+    mapview(final_data_1, zcol = input_variable, layer.name = legend_Name, col.regions=hcl.colors(palette = p, n = 4))@map
     
     
   })
   
   output$map2 <- renderLeaflet({ 
     
-    input_data_2 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities2)
-    final_data_2 <- merge(cook, input_data_2, by = 'GEOID10')
+    if (input$BorT == 'Tracts'){ 
+      
+      input_data_2 <- input_tracts 
+      cook_2 <- cook_tracts
+      col <- 'TRACTCE10'
+      
+    }
     
-    legend_Name <- input$Sources2
+    else{
+      
+      input_data_2 <- input_data
+      cook_2 <- cook
+      col <- 'GEOID10'
+      
+    }
+    
+    if (input$Communities2 != "All of Chicago") {input_data_2 <- subset(input_data_2, COMMUNITY.AREA.NAME == input$Communities2)}
+    
+    final_data_2 <- merge(cook, input_data_2, by = col)
+    
+    legend_Name <- paste0("2. ", input$Sources2)
     if (input$Type2 == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
     else{input_type <- input$Type2}
     
@@ -194,16 +238,17 @@ function(input, output, session){
       
     }
     
+    p = input$Colors
     
-    
-    mapview(final_data_2, zcol = input_variable, layer.name = legend_Name, col.regions=hcl.colors(palette = input$Colors, n = 4))@map
+    mapview(final_data_2, zcol = input_variable, layer.name = legend_Name, col.regions=hcl.colors(palette = p, n = 4))@map
     
     
   })
   
   output$Elec1 <- renderPlot({
     
-    input_data_1 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities1)
+    if (input$Communities1 != 'All of Chicago'){input_data_1 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities1)}
+    else {input_data_1 <- input_data}
     final_data_1 <- merge(cook, input_data_1, by = 'GEOID10')
     
     if (input$Type1 == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
@@ -218,7 +263,7 @@ function(input, output, session){
     colnames(final_data_1) <- c(month.abb)
     final_data_1 <- data.frame(Month = names(final_data_1),Value=colSums(final_data_1))
     
-    final_data_1$Month <- factor(final_data_1$Month, levels = c(month.abb, "Total"))
+    final_data_1$Month <- factor(final_data_1$Month, levels = month.abb)
     
     ggplot(final_data_1, aes(x = Month, y = Value)) + geom_bar(stat = "identity") +
       scale_y_continuous(name = "Electricity used (KWh)", labels = addUnits) +
@@ -229,7 +274,8 @@ function(input, output, session){
   
   output$Gas1 <- renderPlot({
     
-    input_data_1 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities1)
+    if (input$Communities1 != 'All of Chicago'){input_data_1 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities1)}
+    else {input_data_1 <- input_data}
     final_data_1 <- merge(cook, input_data_1, by = 'GEOID10')
     
     if (input$Type1 == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
@@ -244,7 +290,7 @@ function(input, output, session){
     colnames(final_data_1) <- c(month.abb)
     final_data_1 <- data.frame(Month = names(final_data_1),Value=colSums(final_data_1))
     
-    final_data_1$Month <- factor(final_data_1$Month, levels = c(month.abb, "Total"))
+    final_data_1$Month <- factor(final_data_1$Month, levels = month.abb)
     
     ggplot(final_data_1, aes(x = Month, y = Value)) + geom_bar(stat = "identity") +
       scale_y_continuous(name = "Gas used (KWh)", labels = addUnits) +
@@ -255,7 +301,8 @@ function(input, output, session){
   
   output$Elec2 <- renderPlot({
     
-    input_data_2 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities2)
+    if (input$Communities2 != "All of Chicago") {input_data_2 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities2)}
+    else {input_data_2 <- input_data}
     final_data_2 <- merge(cook, input_data_2, by = 'GEOID10')
     
     if (input$Type2 == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
@@ -270,7 +317,7 @@ function(input, output, session){
     colnames(final_data_2) <- c(month.abb)
     final_data_2 <- data.frame(Month = names(final_data_2),Value=colSums(final_data_2))
     
-    final_data_2$Month <- factor(final_data_2$Month, levels = c(month.abb, "Total"))
+    final_data_2$Month <- factor(final_data_2$Month, levels = month.abb)
     
     ggplot(final_data_2, aes(x = Month, y = Value)) + geom_bar(stat = "identity") +
       scale_y_continuous(name = "Electricity used (KWh)", labels = addUnits) +
@@ -281,7 +328,8 @@ function(input, output, session){
   
   output$Gas2 <- renderPlot({
     
-    input_data_2 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities2)
+    if (input$Communities2 != "All of Chicago") {input_data_2 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities2)}
+    else {input_data_2 <- input_data}
     final_data_2 <- merge(cook, input_data_2, by = 'GEOID10')
     
     if (input$Type2 == 'All'){input_type <- c("Commercial", "Residential", "Industrial")}
@@ -296,7 +344,7 @@ function(input, output, session){
     colnames(final_data_2) <- c(month.abb)
     final_data_2 <- data.frame(Month = names(final_data_2),Value=colSums(final_data_2))
     
-    final_data_2$Month <- factor(final_data_2$Month, levels = c(month.abb, "Total"))
+    final_data_2$Month <- factor(final_data_2$Month, levels = month.abb)
     
     ggplot(final_data_2, aes(x = Month, y = Value)) + geom_bar(stat = "identity") +
       scale_y_continuous(name = "Gas used (KWh)", labels = addUnits) +
@@ -314,18 +362,38 @@ function(input, output, session){
   observe({
     
     input$reset_button1
-    input_data_1 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities1)
+    if (input$Communities1 != 'All of Chicago') {
+      
+      input_data_1 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities1)
+      base_zoom <- 13.5
+      
+      }
+    else {
+      
+      input_data_1 <- input_data
+      base_zoom <- 10
+      }
     final_data_1 <- merge(cook, input_data_1, by = 'GEOID10')
     
-    leafletProxy("map1") %>% setView(lat = mean(as.numeric(final_data_1$INTPTLAT10)), lng = mean(as.numeric(final_data_1$INTPTLON10)), zoom = 13.5)
+    leafletProxy("map1") %>% setView(lat = mean(as.numeric(final_data_1$INTPTLAT10)), lng = mean(as.numeric(final_data_1$INTPTLON10)), zoom = base_zoom)
   })
   
   observe({
     input$reset_button2
-    input_data_2 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities2)
+    if (input$Communities2 != "All of Chicago") {
+    
+      input_data_2 <- subset(input_data, COMMUNITY.AREA.NAME == input$Communities2)
+      base_zoom <- 13.5}
+    
+    else { 
+      
+      input_data_2 <- input_data
+      base_zoom <- 10.5
+      
+    }
     final_data_2 <- merge(cook, input_data_2, by = 'GEOID10')
     
-    leafletProxy("map2") %>% setView(lat = mean(as.numeric(final_data_2$INTPTLAT10)), lng = mean(as.numeric(final_data_2$INTPTLON10)), zoom = 13.5)
+    leafletProxy("map2") %>% setView(lat = mean(as.numeric(final_data_2$INTPTLAT10)), lng = mean(as.numeric(final_data_2$INTPTLON10)), zoom = base_zoom)
   })
   
 }
